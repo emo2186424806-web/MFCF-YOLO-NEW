@@ -1,35 +1,21 @@
-from typing import Optional
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['MobileNetV4ConvLarge', 'MobileNetV4ConvSmall', 'MobileNetV4ConvMedium', 'MobileNetV4HybridMedium',
-           'MobileNetV4HybridLarge']
+__all__ = [
+    "MobileNetV4ConvLarge",
+    "MobileNetV4ConvMedium",
+    "MobileNetV4ConvSmall",
+    "MobileNetV4HybridLarge",
+    "MobileNetV4HybridMedium",
+]
 
 MNV4ConvSmall_BLOCK_SPECS = {
-    "conv0": {
-        "block_name": "convbn",
-        "num_blocks": 1,
-        "block_specs": [
-            [3, 32, 3, 2]
-        ]
-    },
-    "layer1": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [32, 32, 3, 2],
-            [32, 32, 1, 1]
-        ]
-    },
-    "layer2": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [32, 96, 3, 2],
-            [96, 64, 1, 1]
-        ]
-    },
+    "conv0": {"block_name": "convbn", "num_blocks": 1, "block_specs": [[3, 32, 3, 2]]},
+    "layer1": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[32, 32, 3, 2], [32, 32, 1, 1]]},
+    "layer2": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[32, 96, 3, 2], [96, 64, 1, 1]]},
     "layer3": {
         "block_name": "uib",
         "num_blocks": 6,
@@ -40,7 +26,7 @@ MNV4ConvSmall_BLOCK_SPECS = {
             [96, 96, 0, 3, True, 1, 2],
             [96, 96, 0, 3, True, 1, 2],
             [96, 96, 3, 0, True, 1, 4],
-        ]
+        ],
     },
     "layer4": {
         "block_name": "uib",
@@ -52,40 +38,18 @@ MNV4ConvSmall_BLOCK_SPECS = {
             [128, 128, 0, 5, True, 1, 3],
             [128, 128, 0, 3, True, 1, 4],
             [128, 128, 0, 3, True, 1, 4],
-        ]
+        ],
     },
-    "layer5": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [128, 960, 1, 1],
-            [960, 1280, 1, 1]
-        ]
-    }
+    "layer5": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[128, 960, 1, 1], [960, 1280, 1, 1]]},
 }
 
 MNV4ConvMedium_BLOCK_SPECS = {
-    "conv0": {
-        "block_name": "convbn",
-        "num_blocks": 1,
-        "block_specs": [
-            [3, 32, 3, 2]
-        ]
-    },
-    "layer1": {
-        "block_name": "fused_ib",
-        "num_blocks": 1,
-        "block_specs": [
-            [32, 48, 2, 4.0, True]
-        ]
-    },
+    "conv0": {"block_name": "convbn", "num_blocks": 1, "block_specs": [[3, 32, 3, 2]]},
+    "layer1": {"block_name": "fused_ib", "num_blocks": 1, "block_specs": [[32, 48, 2, 4.0, True]]},
     "layer2": {
         "block_name": "uib",
         "num_blocks": 2,
-        "block_specs": [
-            [48, 80, 3, 5, True, 2, 4],
-            [80, 80, 3, 3, True, 1, 2]
-        ]
+        "block_specs": [[48, 80, 3, 5, True, 2, 4], [80, 80, 3, 3, True, 1, 2]],
     },
     "layer3": {
         "block_name": "uib",
@@ -98,8 +62,8 @@ MNV4ConvMedium_BLOCK_SPECS = {
             [160, 160, 3, 3, True, 1, 4],
             [160, 160, 3, 0, True, 1, 4],
             [160, 160, 0, 0, True, 1, 2],
-            [160, 160, 3, 0, True, 1, 4]
-        ]
+            [160, 160, 3, 0, True, 1, 4],
+        ],
     },
     "layer4": {
         "block_name": "uib",
@@ -115,41 +79,19 @@ MNV4ConvMedium_BLOCK_SPECS = {
             [256, 256, 5, 5, True, 1, 4],
             [256, 256, 0, 0, True, 1, 4],
             [256, 256, 0, 0, True, 1, 4],
-            [256, 256, 5, 0, True, 1, 2]
-        ]
+            [256, 256, 5, 0, True, 1, 2],
+        ],
     },
-    "layer5": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [256, 960, 1, 1],
-            [960, 1280, 1, 1]
-        ]
-    }
+    "layer5": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[256, 960, 1, 1], [960, 1280, 1, 1]]},
 }
 
 MNV4ConvLarge_BLOCK_SPECS = {
-    "conv0": {
-        "block_name": "convbn",
-        "num_blocks": 1,
-        "block_specs": [
-            [3, 24, 3, 2]
-        ]
-    },
-    "layer1": {
-        "block_name": "fused_ib",
-        "num_blocks": 1,
-        "block_specs": [
-            [24, 48, 2, 4.0, True]
-        ]
-    },
+    "conv0": {"block_name": "convbn", "num_blocks": 1, "block_specs": [[3, 24, 3, 2]]},
+    "layer1": {"block_name": "fused_ib", "num_blocks": 1, "block_specs": [[24, 48, 2, 4.0, True]]},
     "layer2": {
         "block_name": "uib",
         "num_blocks": 2,
-        "block_specs": [
-            [48, 96, 3, 5, True, 2, 4],
-            [96, 96, 3, 3, True, 1, 4]
-        ]
+        "block_specs": [[48, 96, 3, 5, True, 2, 4], [96, 96, 3, 3, True, 1, 4]],
     },
     "layer3": {
         "block_name": "uib",
@@ -165,8 +107,8 @@ MNV4ConvLarge_BLOCK_SPECS = {
             [192, 192, 5, 3, True, 1, 4],
             [192, 192, 5, 3, True, 1, 4],
             [192, 192, 5, 3, True, 1, 4],
-            [192, 192, 3, 0, True, 1, 4]
-        ]
+            [192, 192, 3, 0, True, 1, 4],
+        ],
     },
     "layer4": {
         "block_name": "uib",
@@ -184,17 +126,10 @@ MNV4ConvLarge_BLOCK_SPECS = {
             [512, 512, 5, 5, True, 1, 4],
             [512, 512, 5, 0, True, 1, 4],
             [512, 512, 5, 0, True, 1, 4],
-            [512, 512, 5, 0, True, 1, 4]
-        ]
+            [512, 512, 5, 0, True, 1, 4],
+        ],
     },
-    "layer5": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [512, 960, 1, 1],
-            [960, 1280, 1, 1]
-        ]
-    }
+    "layer5": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[512, 960, 1, 1], [960, 1280, 1, 1]]},
 }
 
 
@@ -209,33 +144,25 @@ def mhsa(num_heads, key_dim, value_dim, px):
     use_multi_query = True
     use_residual = True
     return [
-        num_heads, key_dim, value_dim, query_h_strides, query_w_strides, kv_strides,
-        use_layer_scale, use_multi_query, use_residual
+        num_heads,
+        key_dim,
+        value_dim,
+        query_h_strides,
+        query_w_strides,
+        kv_strides,
+        use_layer_scale,
+        use_multi_query,
+        use_residual,
     ]
 
 
 MNV4HybridConvMedium_BLOCK_SPECS = {
-    "conv0": {
-        "block_name": "convbn",
-        "num_blocks": 1,
-        "block_specs": [
-            [3, 32, 3, 2]
-        ]
-    },
-    "layer1": {
-        "block_name": "fused_ib",
-        "num_blocks": 1,
-        "block_specs": [
-            [32, 48, 2, 4.0, True]
-        ]
-    },
+    "conv0": {"block_name": "convbn", "num_blocks": 1, "block_specs": [[3, 32, 3, 2]]},
+    "layer1": {"block_name": "fused_ib", "num_blocks": 1, "block_specs": [[32, 48, 2, 4.0, True]]},
     "layer2": {
         "block_name": "uib",
         "num_blocks": 2,
-        "block_specs": [
-            [48, 80, 3, 5, True, 2, 4],
-            [80, 80, 3, 3, True, 1, 2]
-        ]
+        "block_specs": [[48, 80, 3, 5, True, 2, 4], [80, 80, 3, 3, True, 1, 2]],
     },
     "layer3": {
         "block_name": "uib",
@@ -248,8 +175,8 @@ MNV4HybridConvMedium_BLOCK_SPECS = {
             [160, 160, 3, 3, True, 1, 4, mhsa(4, 64, 64, 24)],
             [160, 160, 3, 0, True, 1, 4, mhsa(4, 64, 64, 24)],
             [160, 160, 3, 3, True, 1, 4, mhsa(4, 64, 64, 24)],
-            [160, 160, 3, 0, True, 1, 4]
-        ]
+            [160, 160, 3, 0, True, 1, 4],
+        ],
     },
     "layer4": {
         "block_name": "uib",
@@ -266,41 +193,19 @@ MNV4HybridConvMedium_BLOCK_SPECS = {
             [256, 256, 3, 0, True, 1, 4, mhsa(4, 64, 64, 12)],
             [256, 256, 5, 5, True, 1, 4, mhsa(4, 64, 64, 12)],
             [256, 256, 5, 0, True, 1, 4, mhsa(4, 64, 64, 12)],
-            [256, 256, 5, 0, True, 1, 4]
-        ]
+            [256, 256, 5, 0, True, 1, 4],
+        ],
     },
-    "layer5": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [256, 960, 1, 1],
-            [960, 1280, 1, 1]
-        ]
-    }
+    "layer5": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[256, 960, 1, 1], [960, 1280, 1, 1]]},
 }
 
 MNV4HybridConvLarge_BLOCK_SPECS = {
-    "conv0": {
-        "block_name": "convbn",
-        "num_blocks": 1,
-        "block_specs": [
-            [3, 24, 3, 2]
-        ]
-    },
-    "layer1": {
-        "block_name": "fused_ib",
-        "num_blocks": 1,
-        "block_specs": [
-            [24, 48, 2, 4.0, True]
-        ]
-    },
+    "conv0": {"block_name": "convbn", "num_blocks": 1, "block_specs": [[3, 24, 3, 2]]},
+    "layer1": {"block_name": "fused_ib", "num_blocks": 1, "block_specs": [[24, 48, 2, 4.0, True]]},
     "layer2": {
         "block_name": "uib",
         "num_blocks": 2,
-        "block_specs": [
-            [48, 96, 3, 5, True, 2, 4],
-            [96, 96, 3, 3, True, 1, 4]
-        ]
+        "block_specs": [[48, 96, 3, 5, True, 2, 4], [96, 96, 3, 3, True, 1, 4]],
     },
     "layer3": {
         "block_name": "uib",
@@ -316,8 +221,8 @@ MNV4HybridConvLarge_BLOCK_SPECS = {
             [192, 192, 5, 3, True, 1, 4, mhsa(8, 48, 48, 24)],
             [192, 192, 5, 3, True, 1, 4, mhsa(8, 48, 48, 24)],
             [192, 192, 5, 3, True, 1, 4, mhsa(8, 48, 48, 24)],
-            [192, 192, 3, 0, True, 1, 4]
-        ]
+            [192, 192, 3, 0, True, 1, 4],
+        ],
     },
     "layer4": {
         "block_name": "uib",
@@ -336,17 +241,10 @@ MNV4HybridConvLarge_BLOCK_SPECS = {
             [512, 512, 5, 0, True, 1, 4, mhsa(8, 64, 64, 12)],
             [512, 512, 5, 0, True, 1, 4, mhsa(8, 64, 64, 12)],
             [512, 512, 5, 0, True, 1, 4, mhsa(8, 64, 64, 12)],
-            [512, 512, 5, 0, True, 1, 4]
-        ]
+            [512, 512, 5, 0, True, 1, 4],
+        ],
     },
-    "layer5": {
-        "block_name": "convbn",
-        "num_blocks": 2,
-        "block_specs": [
-            [512, 960, 1, 1],
-            [960, 1280, 1, 1]
-        ]
-    }
+    "layer5": {"block_name": "convbn", "num_blocks": 2, "block_specs": [[512, 960, 1, 1], [960, 1280, 1, 1]]},
 }
 
 MODEL_SPECS = {
@@ -354,26 +252,26 @@ MODEL_SPECS = {
     "MobileNetV4ConvMedium": MNV4ConvMedium_BLOCK_SPECS,
     "MobileNetV4ConvLarge": MNV4ConvLarge_BLOCK_SPECS,
     "MobileNetV4HybridMedium": MNV4HybridConvMedium_BLOCK_SPECS,
-    "MobileNetV4HybridLarge": MNV4HybridConvLarge_BLOCK_SPECS
+    "MobileNetV4HybridLarge": MNV4HybridConvLarge_BLOCK_SPECS,
 }
 
 
 def make_divisible(
-        value: float,
-        divisor: int,
-        min_value: Optional[float] = None,
-        round_down_protect: bool = True,
+    value: float,
+    divisor: int,
+    min_value: float | None = None,
+    round_down_protect: bool = True,
 ) -> int:
-    """
-    This function is copied from here
-    "https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_layers.py"
-    This is to ensure that all layers have channels that are divisible by 8.
+    """This function is copied from here
+    "https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_layers.py" This is to
+    ensure that all layers have channels that are divisible by 8.
+
     Args:
         value: A `float` of original value.
         divisor: An `int` of the divisor that need to be checked upon.
-        min_value: A `float` of  minimum value threshold.
-        round_down_protect: A `bool` indicating whether round down more than 10%
-        will be allowed.
+        min_value: A `float` of minimum value threshold.
+        round_down_protect: A `bool` indicating whether round down more than 10% will be allowed.
+
     Returns:
         The adjusted value in `int` that is divisible against divisor.
     """
@@ -389,27 +287,28 @@ def make_divisible(
 def conv_2d(inp, oup, kernel_size=3, stride=1, groups=1, bias=False, norm=True, act=True):
     conv = nn.Sequential()
     padding = (kernel_size - 1) // 2
-    conv.add_module('conv', nn.Conv2d(inp, oup, kernel_size, stride, padding, bias=bias, groups=groups))
+    conv.add_module("conv", nn.Conv2d(inp, oup, kernel_size, stride, padding, bias=bias, groups=groups))
     if norm:
-        conv.add_module('BatchNorm2d', nn.BatchNorm2d(oup))
+        conv.add_module("BatchNorm2d", nn.BatchNorm2d(oup))
     if act:
-        conv.add_module('Activation', nn.ReLU6())
+        conv.add_module("Activation", nn.ReLU6())
     return conv
 
 
 class InvertedResidual(nn.Module):
     def __init__(self, inp, oup, stride, expand_ratio, act=False, squeeze_excitation=False):
-        super(InvertedResidual, self).__init__()
+        super().__init__()
         self.stride = stride
         assert stride in [1, 2]
-        hidden_dim = int(round(inp * expand_ratio))
+        hidden_dim = round(inp * expand_ratio)
         self.block = nn.Sequential()
         if expand_ratio != 1:
-            self.block.add_module('exp_1x1', conv_2d(inp, hidden_dim, kernel_size=3, stride=stride))
+            self.block.add_module("exp_1x1", conv_2d(inp, hidden_dim, kernel_size=3, stride=stride))
         if squeeze_excitation:
-            self.block.add_module('conv_3x3',
-                                  conv_2d(hidden_dim, hidden_dim, kernel_size=3, stride=stride, groups=hidden_dim))
-        self.block.add_module('red_1x1', conv_2d(hidden_dim, oup, kernel_size=1, stride=1, act=act))
+            self.block.add_module(
+                "conv_3x3", conv_2d(hidden_dim, hidden_dim, kernel_size=3, stride=stride, groups=hidden_dim)
+            )
+        self.block.add_module("red_1x1", conv_2d(hidden_dim, oup, kernel_size=1, stride=1, act=act))
         self.use_res_connect = self.stride == 1 and inp == oup
 
     def forward(self, x):
@@ -420,17 +319,11 @@ class InvertedResidual(nn.Module):
 
 
 class UniversalInvertedBottleneckBlock(nn.Module):
-    def __init__(self,
-                 inp,
-                 oup,
-                 start_dw_kernel_size,
-                 middle_dw_kernel_size,
-                 middle_dw_downsample,
-                 stride,
-                 expand_ratio
-                 ):
-        """An inverted bottleneck block with optional depthwises.
-        Referenced from here https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py
+    def __init__(
+        self, inp, oup, start_dw_kernel_size, middle_dw_kernel_size, middle_dw_downsample, stride, expand_ratio
+    ):
+        """An inverted bottleneck block with optional depthwises. Referenced from here
+        https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py.
         """
         super().__init__()
         # Starting depthwise conv.
@@ -445,8 +338,9 @@ class UniversalInvertedBottleneckBlock(nn.Module):
         self.middle_dw_kernel_size = middle_dw_kernel_size
         if self.middle_dw_kernel_size:
             stride_ = stride if middle_dw_downsample else 1
-            self._middle_dw = conv_2d(expand_filters, expand_filters, kernel_size=middle_dw_kernel_size, stride=stride_,
-                                      groups=expand_filters)
+            self._middle_dw = conv_2d(
+                expand_filters, expand_filters, kernel_size=middle_dw_kernel_size, stride=stride_, groups=expand_filters
+            )
         # Projection with 1x1 convs.
         self._proj_conv = conv_2d(expand_filters, oup, kernel_size=1, stride=1, act=False)
 
@@ -470,17 +364,24 @@ class UniversalInvertedBottleneckBlock(nn.Module):
 
 
 class MultiQueryAttentionLayerWithDownSampling(nn.Module):
-    def __init__(self, inp, num_heads, key_dim, value_dim, query_h_strides, query_w_strides, kv_strides,
-                 dw_kernel_size=3, dropout=0.0):
-        """Multi Query Attention with spatial downsampling.
-        Referenced from here https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py
-        3 parameters are introduced for the spatial downsampling:
-        1. kv_strides: downsampling factor on Key and Values only.
-        2. query_h_strides: vertical strides on Query only.
-        3. query_w_strides: horizontal strides on Query only.
-        This is an optimized version.
-        1. Projections in Attention is explict written out as 1x1 Conv2D.
-        2. Additional reshapes are introduced to bring a up to 3x speed up.
+    def __init__(
+        self,
+        inp,
+        num_heads,
+        key_dim,
+        value_dim,
+        query_h_strides,
+        query_w_strides,
+        kv_strides,
+        dw_kernel_size=3,
+        dropout=0.0,
+    ):
+        """Multi Query Attention with spatial downsampling. Referenced from here
+        https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py 3
+        parameters are introduced for the spatial downsampling: 1. kv_strides: downsampling factor on Key and
+        Values only. 2. query_h_strides: vertical strides on Query only. 3. query_w_strides: horizontal strides
+        on Query only. This is an optimized version. 1. Projections in Attention is explicit written out as 1x1
+        Conv2D. 2. Additional reshapes are introduced to bring a up to 3x speed up.
         """
         super().__init__()
         self.num_heads = num_heads
@@ -508,7 +409,7 @@ class MultiQueryAttentionLayerWithDownSampling(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        batch_size, seq_length, _, _ = x.size()
+        batch_size, _seq_length, _, _ = x.size()
         if self.query_h_strides > 1 or self.query_w_strides > 1:
             q = F.avg_pool2d(self.query_h_stride, self.query_w_stride)
             q = self._query_downsampling_norm(q)
@@ -530,7 +431,7 @@ class MultiQueryAttentionLayerWithDownSampling(nn.Module):
         v = v.view(batch_size, -1, self.key_dim)  # [batch_size, seq_length, key_dim]
 
         # calculate attn score
-        attn_score = torch.matmul(q, k) / (self.head_dim ** 0.5)
+        attn_score = torch.matmul(q, k) / (self.head_dim**0.5)
         attn_score = self.dropout(attn_score)
         attn_score = F.softmax(attn_score, dim=-1)
 
@@ -542,9 +443,10 @@ class MultiQueryAttentionLayerWithDownSampling(nn.Module):
 
 class MNV4LayerScale(nn.Module):
     def __init__(self, init_value):
-        """LayerScale as introduced in CaiT: https://arxiv.org/abs/2103.17239
-        Referenced from here https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py
-        As used in MobileNetV4.
+        """LayerScale as introduced in CaiT: https://arxiv.org/abs/2103.17239 Referenced from here
+        https://github.com/tensorflow/models/blob/master/official/vision/modeling/layers/nn_blocks.py As used
+        in MobileNetV4.
+
         Attributes:
             init_value (float): value to initialize the diagonal matrix of LayerScale.
         """
@@ -558,17 +460,17 @@ class MNV4LayerScale(nn.Module):
 
 class MultiHeadSelfAttentionBlock(nn.Module):
     def __init__(
-            self,
-            inp,
-            num_heads,
-            key_dim,
-            value_dim,
-            query_h_strides,
-            query_w_strides,
-            kv_strides,
-            use_layer_scale,
-            use_multi_query,
-            use_residual=True
+        self,
+        inp,
+        num_heads,
+        key_dim,
+        value_dim,
+        query_h_strides,
+        query_w_strides,
+        kv_strides,
+        use_layer_scale,
+        use_multi_query,
+        use_residual=True,
     ):
         super().__init__()
         self.query_h_strides = query_h_strides
@@ -610,33 +512,49 @@ class MultiHeadSelfAttentionBlock(nn.Module):
 
 
 def build_blocks(layer_spec):
-    if not layer_spec.get('block_name'):
+    if not layer_spec.get("block_name"):
         return nn.Sequential()
-    block_names = layer_spec['block_name']
+    block_names = layer_spec["block_name"]
     layers = nn.Sequential()
     if block_names == "convbn":
-        schema_ = ['inp', 'oup', 'kernel_size', 'stride']
-        for i in range(layer_spec['num_blocks']):
-            args = dict(zip(schema_, layer_spec['block_specs'][i]))
+        schema_ = ["inp", "oup", "kernel_size", "stride"]
+        for i in range(layer_spec["num_blocks"]):
+            args = dict(zip(schema_, layer_spec["block_specs"][i]))
             layers.add_module(f"convbn_{i}", conv_2d(**args))
     elif block_names == "uib":
-        schema_ = ['inp', 'oup', 'start_dw_kernel_size', 'middle_dw_kernel_size', 'middle_dw_downsample', 'stride',
-                   'expand_ratio', 'msha']
-        for i in range(layer_spec['num_blocks']):
-            args = dict(zip(schema_, layer_spec['block_specs'][i]))
+        schema_ = [
+            "inp",
+            "oup",
+            "start_dw_kernel_size",
+            "middle_dw_kernel_size",
+            "middle_dw_downsample",
+            "stride",
+            "expand_ratio",
+            "msha",
+        ]
+        for i in range(layer_spec["num_blocks"]):
+            args = dict(zip(schema_, layer_spec["block_specs"][i]))
             msha = args.pop("msha") if "msha" in args else 0
             layers.add_module(f"uib_{i}", UniversalInvertedBottleneckBlock(**args))
             if msha:
                 msha_schema_ = [
-                    "inp", "num_heads", "key_dim", "value_dim", "query_h_strides", "query_w_strides", "kv_strides",
-                    "use_layer_scale", "use_multi_query", "use_residual"
+                    "inp",
+                    "num_heads",
+                    "key_dim",
+                    "value_dim",
+                    "query_h_strides",
+                    "query_w_strides",
+                    "kv_strides",
+                    "use_layer_scale",
+                    "use_multi_query",
+                    "use_residual",
                 ]
-                args = dict(zip(msha_schema_, [args['oup']] + (msha)))
+                args = dict(zip(msha_schema_, [args["oup"], *msha]))
                 layers.add_module(f"msha_{i}", MultiHeadSelfAttentionBlock(**args))
     elif block_names == "fused_ib":
-        schema_ = ['inp', 'oup', 'stride', 'expand_ratio', 'act']
-        for i in range(layer_spec['num_blocks']):
-            args = dict(zip(schema_, layer_spec['block_specs'][i]))
+        schema_ = ["inp", "oup", "stride", "expand_ratio", "act"]
+        for i in range(layer_spec["num_blocks"]):
+            args = dict(zip(schema_, layer_spec["block_specs"][i]))
             layers.add_module(f"fused_ib_{i}", InvertedResidual(**args))
     else:
         raise NotImplementedError
@@ -647,10 +565,11 @@ class MobileNetV4(nn.Module):
     def __init__(self, model):
         # MobileNetV4ConvSmall  MobileNetV4ConvMedium  MobileNetV4ConvLarge
         # MobileNetV4HybridMedium  MobileNetV4HybridLarge
-        """Params to initiate MobilenNetV4
+        """Params to initiate MobilenNetV4.
+
         Args:
-            model : support 5 types of models as indicated in
-            "https://github.com/tensorflow/models/blob/master/official/vision/modeling/backbones/mobilenet.py"
+            model: support 5 types of models as indicated in
+            "https: //github.com/tensorflow/models/blob/master/official/vision/modeling/backbones/mobilenet.py".
         """
         super().__init__()
         assert model in MODEL_SPECS.keys()
@@ -658,17 +577,17 @@ class MobileNetV4(nn.Module):
         self.spec = MODEL_SPECS[self.model]
 
         # conv0
-        self.conv0 = build_blocks(self.spec['conv0'])
+        self.conv0 = build_blocks(self.spec["conv0"])
         # layer1
-        self.layer1 = build_blocks(self.spec['layer1'])
+        self.layer1 = build_blocks(self.spec["layer1"])
         # layer2
-        self.layer2 = build_blocks(self.spec['layer2'])
+        self.layer2 = build_blocks(self.spec["layer2"])
         # layer3
-        self.layer3 = build_blocks(self.spec['layer3'])
+        self.layer3 = build_blocks(self.spec["layer3"])
         # layer4
-        self.layer4 = build_blocks(self.spec['layer4'])
+        self.layer4 = build_blocks(self.spec["layer4"])
         # layer5
-        self.layer5 = build_blocks(self.spec['layer5'])
+        self.layer5 = build_blocks(self.spec["layer5"])
         self.width_list = [i.size(1) for i in self.forward(torch.randn(1, 3, 640, 640))]
 
     def forward(self, x):
@@ -683,27 +602,27 @@ class MobileNetV4(nn.Module):
 
 
 def MobileNetV4ConvSmall():
-    model = MobileNetV4('MobileNetV4ConvSmall')
+    model = MobileNetV4("MobileNetV4ConvSmall")
     return model
 
 
 def MobileNetV4ConvMedium():
-    model = MobileNetV4('MobileNetV4ConvMedium')
+    model = MobileNetV4("MobileNetV4ConvMedium")
     return model
 
 
 def MobileNetV4ConvLarge():
-    model = MobileNetV4('MobileNetV4ConvLarge')
+    model = MobileNetV4("MobileNetV4ConvLarge")
     return model
 
 
 def MobileNetV4HybridMedium():
-    model = MobileNetV4('MobileNetV4HybridMedium')
+    model = MobileNetV4("MobileNetV4HybridMedium")
     return model
 
 
 def MobileNetV4HybridLarge():
-    model = MobileNetV4('MobileNetV4HybridLarge')
+    model = MobileNetV4("MobileNetV4HybridLarge")
     return model
 
 
