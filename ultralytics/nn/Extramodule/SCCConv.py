@@ -1,20 +1,18 @@
-'''
+"""
 Description:
 Date: 2023-07-21 14:36:27
 LastEditTime: 2023-07-27 18:41:47
-FilePath: /chengdongzhou/ScConv.py
-'''
+FilePath: /chengdongzhou/ScConv.py.
+"""
+
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class GroupBatchnorm2d(nn.Module):
-    def __init__(self, c_num: int,
-                 group_num: int = 16,
-                 eps: float = 1e-10
-                 ):
-        super(GroupBatchnorm2d, self).__init__()
+    def __init__(self, c_num: int, group_num: int = 16, eps: float = 1e-10):
+        super().__init__()
         assert c_num >= group_num
         self.group_num = group_num
         self.weight = nn.Parameter(torch.randn(c_num, 1, 1))
@@ -32,16 +30,14 @@ class GroupBatchnorm2d(nn.Module):
 
 
 class SRU(nn.Module):
-    def __init__(self,
-                 oup_channels: int,
-                 group_num: int = 16,
-                 gate_treshold: float = 0.5,
-                 torch_gn: bool = True
-                 ):
+    def __init__(self, oup_channels: int, group_num: int = 16, gate_treshold: float = 0.5, torch_gn: bool = True):
         super().__init__()
 
-        self.gn = nn.GroupNorm(num_channels=oup_channels, num_groups=group_num) if torch_gn else GroupBatchnorm2d(
-            c_num=oup_channels, group_num=group_num)
+        self.gn = (
+            nn.GroupNorm(num_channels=oup_channels, num_groups=group_num)
+            if torch_gn
+            else GroupBatchnorm2d(c_num=oup_channels, group_num=group_num)
+        )
         self.gate_treshold = gate_treshold
         self.sigomid = nn.Sigmoid()
 
@@ -51,8 +47,12 @@ class SRU(nn.Module):
         w_gamma = w_gamma.view(1, -1, 1, 1)
         reweigts = self.sigomid(gn_x * w_gamma)
         # Gate
-        w1 = torch.where(reweigts > self.gate_treshold, torch.ones_like(reweigts), reweigts)  # 大于门限值的设为1，否则保留原值
-        w2 = torch.where(reweigts > self.gate_treshold, torch.zeros_like(reweigts), reweigts)  # 大于门限值的设为0，否则保留原值
+        w1 = torch.where(
+            reweigts > self.gate_treshold, torch.ones_like(reweigts), reweigts
+        )  # 大于门限值的设为1，否则保留原值
+        w2 = torch.where(
+            reweigts > self.gate_treshold, torch.zeros_like(reweigts), reweigts
+        )  # 大于门限值的设为0，否则保留原值
         x_1 = w1 * x
         x_2 = w2 * x
         y = self.reconstruct(x_1, x_2)
@@ -65,29 +65,35 @@ class SRU(nn.Module):
 
 
 class CRU(nn.Module):
-    '''
-    alpha: 0<alpha<1
-    '''
+    """Alpha: 0<alpha<1."""
 
-    def __init__(self,
-                 op_channel: int,
-                 alpha: float = 1 / 2,
-                 squeeze_radio: int = 2,
-                 group_size: int = 2,
-                 group_kernel_size: int = 3,
-                 ):
+    def __init__(
+        self,
+        op_channel: int,
+        alpha: float = 1 / 2,
+        squeeze_radio: int = 2,
+        group_size: int = 2,
+        group_kernel_size: int = 3,
+    ):
         super().__init__()
         self.up_channel = up_channel = int(alpha * op_channel)
         self.low_channel = low_channel = op_channel - up_channel
         self.squeeze1 = nn.Conv2d(up_channel, up_channel // squeeze_radio, kernel_size=1, bias=False)
         self.squeeze2 = nn.Conv2d(low_channel, low_channel // squeeze_radio, kernel_size=1, bias=False)
         # up
-        self.GWC = nn.Conv2d(up_channel // squeeze_radio, op_channel, kernel_size=group_kernel_size, stride=1,
-                             padding=group_kernel_size // 2, groups=group_size)
+        self.GWC = nn.Conv2d(
+            up_channel // squeeze_radio,
+            op_channel,
+            kernel_size=group_kernel_size,
+            stride=1,
+            padding=group_kernel_size // 2,
+            groups=group_size,
+        )
         self.PWC1 = nn.Conv2d(up_channel // squeeze_radio, op_channel, kernel_size=1, bias=False)
         # low
-        self.PWC2 = nn.Conv2d(low_channel // squeeze_radio, op_channel - low_channel // squeeze_radio, kernel_size=1,
-                              bias=False)
+        self.PWC2 = nn.Conv2d(
+            low_channel // squeeze_radio, op_channel - low_channel // squeeze_radio, kernel_size=1, bias=False
+        )
         self.advavg = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, x):
@@ -105,24 +111,25 @@ class CRU(nn.Module):
 
 
 class SccConv(nn.Module):
-    def __init__(self,
-                 op_channel: int,
-                 group_num: int = 4,
-                 gate_treshold: float = 0.5,
-                 alpha: float = 1 / 2,
-                 squeeze_radio: int = 2,
-                 group_size: int = 2,
-                 group_kernel_size: int = 3,
-                 ):
+    def __init__(
+        self,
+        op_channel: int,
+        group_num: int = 4,
+        gate_treshold: float = 0.5,
+        alpha: float = 1 / 2,
+        squeeze_radio: int = 2,
+        group_size: int = 2,
+        group_kernel_size: int = 3,
+    ):
         super().__init__()
-        self.SRU = SRU(op_channel,
-                       group_num=group_num,
-                       gate_treshold=gate_treshold)
-        self.CRU = CRU(op_channel,
-                       alpha=alpha,
-                       squeeze_radio=squeeze_radio,
-                       group_size=group_size,
-                       group_kernel_size=group_kernel_size)
+        self.SRU = SRU(op_channel, group_num=group_num, gate_treshold=gate_treshold)
+        self.CRU = CRU(
+            op_channel,
+            alpha=alpha,
+            squeeze_radio=squeeze_radio,
+            group_size=group_size,
+            group_kernel_size=group_kernel_size,
+        )
 
     def forward(self, x):
         x = self.SRU(x)
@@ -130,7 +137,7 @@ class SccConv(nn.Module):
         return x
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     x = torch.randn(1, 32, 16, 16)
     model = SccConv(32)
     print(model(x).shape)
