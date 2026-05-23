@@ -1,0 +1,12 @@
+
+path: WiderPerson  # 数据集根目录
+
+# 路径
+train: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/WiderPerson/images/train  # 训练集
+val: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/WiderPerson/images/val      # 验证集
+test: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/WiderPerson/images/test    # 测试集
+
+# 类别：仅行人 1 类
+nc: 1
+names:
+  0: person
