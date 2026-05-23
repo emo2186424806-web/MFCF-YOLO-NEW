@@ -1,6 +1,8 @@
-from ultralytics import YOLO
-import torch
 import time
+
+import torch
+
+from ultralytics import YOLO
 
 # 这里只改成你当前要测试的 yaml 文件
 model_yaml = r"runs/new-pruning/widerperson+step5/student/weights/best.pt"
