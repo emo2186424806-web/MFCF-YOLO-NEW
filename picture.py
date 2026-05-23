@@ -1,7 +1,8 @@
 import os
-import pandas as pd
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # =========================
 # 全局绘图风格
@@ -35,9 +36,9 @@ custom_labels = [
 ]
 
 
-params_m = [2.62, 2.24, 1.93, 1.43]   # 单位: M
-gflops = [6.6, 5.6, 4.7, 4.6]         # 单位: GFLOPs
-fps = [84.81, 85.94, 93.92, 112.13]        # 单位: FPS
+params_m = [2.62, 2.24, 1.93, 1.43]  # 单位: M
+gflops = [6.6, 5.6, 4.7, 4.6]  # 单位: GFLOPs
+fps = [84.81, 85.94, 93.92, 112.13]  # 单位: FPS
 
 # 输出文件夹
 save_dir = "plots"
@@ -114,7 +115,7 @@ def plot_bar_comparison(labels, values, ylabel, title, save_name, color):
             ha="center",
             va="bottom",
             fontsize=10,
-            fontweight="bold"
+            fontweight="bold",
         )
 
     plt.tight_layout()
@@ -123,8 +124,9 @@ def plot_bar_comparison(labels, values, ylabel, title, save_name, color):
     print(f"图像已保存: {save_path}")
     plt.close()
 
+
 def plot_model_complexity(labels, params_m, gflops, fps):
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    _fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
     metrics = [
         (params_m, "Parameters (M)", "Model Parameters Comparison", "#4c72b0"),
@@ -137,10 +139,10 @@ def plot_model_complexity(labels, params_m, gflops, fps):
         bars = ax.bar(
             x,
             values,
-            width=0.45,   # 柱子变细
+            width=0.45,  # 柱子变细
             color=color,
             edgecolor="black",
-            linewidth=1.0
+            linewidth=1.0,
         )
 
         ax.set_title(title, fontweight="bold")
@@ -158,7 +160,7 @@ def plot_model_complexity(labels, params_m, gflops, fps):
                 ha="center",
                 va="bottom",
                 fontsize=10,
-                fontweight="bold"
+                fontweight="bold",
             )
 
     plt.tight_layout()
@@ -172,18 +174,8 @@ if __name__ == "__main__":
     # =========================
     # 精度曲线
     # =========================
-    metrics = [
-        "metrics/precision(B)",
-        "metrics/recall(B)",
-        "metrics/mAP50(B)",
-        "metrics/mAP50-95(B)"
-    ]
-    labels = [
-        "Precision",
-        "Recall",
-        "mAP@50",
-        "mAP@50-95"
-    ]
+    metrics = ["metrics/precision(B)", "metrics/recall(B)", "metrics/mAP50(B)", "metrics/mAP50-95(B)"]
+    labels = ["Precision", "Recall", "mAP@50", "mAP@50-95"]
 
     plot_comparison(
         metrics=metrics,
@@ -191,7 +183,7 @@ if __name__ == "__main__":
         results_files=results_files,
         custom_labels=custom_labels,
         save_name="precision_comparison.png",
-        layout=(2, 2)
+        layout=(2, 2),
     )
 
     # =========================
@@ -203,7 +195,7 @@ if __name__ == "__main__":
         "train/dfl_loss",
         "val/box_loss",
         "val/cls_loss",
-        "val/dfl_loss"
+        "val/dfl_loss",
     ]
     loss_labels = [
         "Train Box Loss",
@@ -211,7 +203,7 @@ if __name__ == "__main__":
         "Train DFL Loss",
         "Val Box Loss",
         "Val Class Loss",
-        "Val DFL Loss"
+        "Val DFL Loss",
     ]
 
     plot_comparison(
@@ -220,7 +212,7 @@ if __name__ == "__main__":
         results_files=results_files,
         custom_labels=custom_labels,
         save_name="loss_comparison.png",
-        layout=(2, 3)
+        layout=(2, 3),
     )
 
     plot_comparison(
@@ -229,14 +221,9 @@ if __name__ == "__main__":
         results_files=results_files,
         custom_labels=custom_labels,
         save_name="precision_only.png",
-        layout=(1, 1)
+        layout=(1, 1),
     )
     # =========================
     # 参数量 / GFLOPs / FPS 柱状图
     # =========================
-    plot_model_complexity(
-        labels=custom_labels,
-        params_m=params_m,
-        gflops=gflops,
-        fps=fps
-    )
+    plot_model_complexity(labels=custom_labels, params_m=params_m, gflops=gflops, fps=fps)

@@ -5,7 +5,7 @@ if __name__ == "__main__":
 
     model.train(
         data=r"WiderPerson.yaml",
-        epochs=300,                                 #100轮
+        epochs=300,  # 100轮
         batch=4,
         imgsz=640,
         workers=2,
