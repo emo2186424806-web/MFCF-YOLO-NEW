@@ -1,16 +1,15 @@
-from ultralytics import YOLO
 import torch
 import torch.nn as nn
 from torch.nn.modules.container import Sequential
 
-from ultralytics.nn.modules import Conv, SPPF, Detect, ADown, C2PSA, C3k2
-from ultralytics.nn.Extramodule.WTConv import C3k2_WTConv, Bottleneck_WTConv
+from ultralytics import YOLO
+from ultralytics.nn.Extramodule.WTConv import Bottleneck_WTConv, C3k2_WTConv
+from ultralytics.nn.modules import C2PSA, SPPF, ADown, C3k2, Conv, Detect
 
 
 class PRUNE:
     def __init__(self):
         self.threshold = None
-
 
     def get_threshold(self, model, factor=0.8):
         ws = []
@@ -194,8 +193,9 @@ class PRUNE:
                 m2[i] = item.cv1
 
         self.prune_conv(m1, m2)
+
     def get_out_channels(self, module):
-        """获取模块当前输出通道数"""
+        """获取模块当前输出通道数."""
         if self._is_conv_wrapper(module):
             return module.conv.out_channels
         elif isinstance(module, (C3k2, C3k2_WTConv, SPPF, C2PSA)):
@@ -209,10 +209,8 @@ class PRUNE:
         return None
 
     def update_fusion_input(self, fusion_block, source_modules):
-        """
-        对 Concat 后接的融合块，按当前实际分支输出通道数更新其输入通道数
-        fusion_block: 例如 seq[15]/seq[20]/seq[23]/seq[26]
-        source_modules: 参与 concat 的来源模块列表
+        """对 Concat 后接的融合块，按当前实际分支输出通道数更新其输入通道数 fusion_block: 例如 seq[15]/seq[20]/seq[23]/seq[26] source_modules: 参与
+        concat 的来源模块列表.
         """
         if not hasattr(fusion_block, "cv1") or not hasattr(fusion_block.cv1, "conv"):
             return
@@ -233,6 +231,7 @@ class PRUNE:
         # 只保留前 new_in 个输入通道，保证结构可运行
         conv.weight.data = conv.weight.data[:, :new_in, :, :]
         conv.in_channels = new_in
+
     def _is_conv_wrapper(self, module):
         return hasattr(module, "conv") and isinstance(module.conv, nn.Conv2d) and hasattr(module, "bn")
 
@@ -257,11 +256,11 @@ def do_pruning(modelpath, savepath, pruning_rate, data_yaml="CityPersons.yaml"):
     print("===========================\n")
 
     # 2. backbone 主干结构剪枝（按你当前真实模型结构）
-    pruning.prune(seq[3], seq[4])         # Conv -> C3k2_WTConv
-    pruning.prune_adown(seq[5], seq[6])   # ADown -> C3k2_WTConv
-    pruning.prune_adown(seq[7], seq[8])   # ADown -> C3k2_WTConv
-    pruning.prune(seq[8], seq[9])         # C3k2_WTConv -> SPPF
-    pruning.prune(seq[9], seq[10])        # SPPF -> C2PSA
+    pruning.prune(seq[3], seq[4])  # Conv -> C3k2_WTConv
+    pruning.prune_adown(seq[5], seq[6])  # ADown -> C3k2_WTConv
+    pruning.prune_adown(seq[7], seq[8])  # ADown -> C3k2_WTConv
+    pruning.prune(seq[8], seq[9])  # C3k2_WTConv -> SPPF
+    pruning.prune(seq[9], seq[10])  # SPPF -> C2PSA
 
     # 3. neck / detect head 剪枝（按当前真实结构）
     detect: Detect = seq[-1]
@@ -293,6 +292,3 @@ def do_pruning(modelpath, savepath, pruning_rate, data_yaml="CityPersons.yaml"):
 
     yolo.val(data=data_yaml, batch=4, workers=4)
     torch.save(yolo.ckpt, savepath)
-
-
-
