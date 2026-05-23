@@ -1,10 +1,8 @@
-
 class ADown(nn.Module):
     """ADown."""
 
     def __init__(self, c1: int, c2: int):
-        """
-        Initialize ADown module.
+        """Initialize ADown module.
 
         Args:
             c1 (int): Input channels.
