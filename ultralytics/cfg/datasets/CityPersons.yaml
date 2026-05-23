@@ -1,9 +1,9 @@
 # CityPersons 行人检测数据集（毕设专用 无报错版）
 path: CityPersons
 
-train: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/train  # 训练集
-val: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/val      # 验证集
-test: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/test    # 测试集
+train: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/train # 训练集
+val: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/val # 验证集
+test: D:/deepleaning/yolo/ultralytics-8.3.163/datasets/CityPersons/images/test # 测试集
 
 nc: 1
 names:
