@@ -1,6 +1,7 @@
-from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import numpy as np
+
+from ultralytics import YOLO
 
 
 def get_layer_channels(model_path, target_layers):
@@ -43,7 +44,7 @@ def plot_channel_comparison_multi(
     prune03_channels,
     prune05_channels,
     prune08_channels,
-    save_path="channel_pruning_multi_comparison.png"
+    save_path="channel_pruning_multi_comparison.png",
 ):
     layers = list(before_channels.keys())
 
@@ -58,9 +59,15 @@ def plot_channel_comparison_multi(
     plt.figure(figsize=(14, 7))
 
     bars1 = plt.bar(x - 1.5 * width, before_vals, width, label="Before Pruning", color="#4C72B0", edgecolor="black")
-    bars2 = plt.bar(x - 0.5 * width, prune03_vals, width, label="Pruning Rate = 0.3", color="#55A868", edgecolor="black")
-    bars3 = plt.bar(x + 0.5 * width, prune05_vals, width, label="Pruning Rate = 0.5", color="#DD8452", edgecolor="black")
-    bars4 = plt.bar(x + 1.5 * width, prune08_vals, width, label="Pruning Rate = 0.8", color="#C44E52", edgecolor="black")
+    bars2 = plt.bar(
+        x - 0.5 * width, prune03_vals, width, label="Pruning Rate = 0.3", color="#55A868", edgecolor="black"
+    )
+    bars3 = plt.bar(
+        x + 0.5 * width, prune05_vals, width, label="Pruning Rate = 0.5", color="#DD8452", edgecolor="black"
+    )
+    bars4 = plt.bar(
+        x + 1.5 * width, prune08_vals, width, label="Pruning Rate = 0.8", color="#C44E52", edgecolor="black"
+    )
 
     plt.xticks(x, [f"Layer {i}" for i in layers], rotation=20)
     plt.ylabel("Output Channels")
@@ -71,14 +78,7 @@ def plot_channel_comparison_multi(
     for bars in [bars1, bars2, bars3, bars4]:
         for bar in bars:
             h = bar.get_height()
-            plt.text(
-                bar.get_x() + bar.get_width() / 2,
-                h,
-                f"{int(h)}",
-                ha="center",
-                va="bottom",
-                fontsize=8
-            )
+            plt.text(bar.get_x() + bar.get_width() / 2, h, f"{int(h)}", ha="center", va="bottom", fontsize=8)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -111,5 +111,5 @@ if __name__ == "__main__":
         prune03_channels,
         prune05_channels,
         prune08_channels,
-        save_path="channel_pruning_multi_comparison.png"
+        save_path="channel_pruning_multi_comparison.png",
     )
