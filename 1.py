@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 import os
+
+import matplotlib.pyplot as plt
 
 # =========================
 # 数据
@@ -59,7 +60,7 @@ if __name__ == "__main__":
         title="Effect of Pruning Factor on Parameters",
         color="#1f77b4",
         marker="o",
-        save_path=os.path.join(save_dir, "curve_params.png")
+        save_path=os.path.join(save_dir, "curve_params.png"),
     )
 
     # 2. GFLOPs 曲线
@@ -70,5 +71,5 @@ if __name__ == "__main__":
         title="Effect of Pruning Factor on GFLOPs",
         color="#ff7f0e",
         marker="s",
-        save_path=os.path.join(save_dir, "curve_gflops.png")
+        save_path=os.path.join(save_dir, "curve_gflops.png"),
     )

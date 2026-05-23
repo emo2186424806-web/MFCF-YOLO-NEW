@@ -1,9 +1,11 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
 
 class swish(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
+
 
 class Bi_FPN(nn.Module):
     def __init__(self, length):
@@ -13,7 +15,7 @@ class Bi_FPN(nn.Module):
         self.epsilon = 0.0001
 
     def forward(self, x):
-        weights = self.weight / (torch.sum(self.swish(self.weight), dim=0) + self.epsilon) # 权重归一化处理
+        weights = self.weight / (torch.sum(self.swish(self.weight), dim=0) + self.epsilon)  # 权重归一化处理
         weighted_feature_maps = [weights[i] * x[i] for i in range(len(x))]
         stacked_feature_maps = torch.stack(weighted_feature_maps, dim=0)
         result = torch.sum(stacked_feature_maps, dim=0)

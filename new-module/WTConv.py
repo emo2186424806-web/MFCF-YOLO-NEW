@@ -1,30 +1,41 @@
-import torch.nn as nn
 from functools import partial
+
 import pywt
 import pywt.data
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['C3k2_WTConv']
+__all__ = ["C3k2_WTConv"]
 
 
 def create_wavelet_filter(wave, in_size, out_size, type=torch.float):
     w = pywt.Wavelet(wave)
     dec_hi = torch.tensor(w.dec_hi[::-1], dtype=type)
     dec_lo = torch.tensor(w.dec_lo[::-1], dtype=type)
-    dec_filters = torch.stack([dec_lo.unsqueeze(0) * dec_lo.unsqueeze(1),
-                               dec_lo.unsqueeze(0) * dec_hi.unsqueeze(1),
-                               dec_hi.unsqueeze(0) * dec_lo.unsqueeze(1),
-                               dec_hi.unsqueeze(0) * dec_hi.unsqueeze(1)], dim=0)
+    dec_filters = torch.stack(
+        [
+            dec_lo.unsqueeze(0) * dec_lo.unsqueeze(1),
+            dec_lo.unsqueeze(0) * dec_hi.unsqueeze(1),
+            dec_hi.unsqueeze(0) * dec_lo.unsqueeze(1),
+            dec_hi.unsqueeze(0) * dec_hi.unsqueeze(1),
+        ],
+        dim=0,
+    )
 
     dec_filters = dec_filters[:, None].repeat(in_size, 1, 1, 1)
 
     rec_hi = torch.tensor(w.rec_hi[::-1], dtype=type).flip(dims=[0])
     rec_lo = torch.tensor(w.rec_lo[::-1], dtype=type).flip(dims=[0])
-    rec_filters = torch.stack([rec_lo.unsqueeze(0) * rec_lo.unsqueeze(1),
-                               rec_lo.unsqueeze(0) * rec_hi.unsqueeze(1),
-                               rec_hi.unsqueeze(0) * rec_lo.unsqueeze(1),
-                               rec_hi.unsqueeze(0) * rec_hi.unsqueeze(1)], dim=0)
+    rec_filters = torch.stack(
+        [
+            rec_lo.unsqueeze(0) * rec_lo.unsqueeze(1),
+            rec_lo.unsqueeze(0) * rec_hi.unsqueeze(1),
+            rec_hi.unsqueeze(0) * rec_lo.unsqueeze(1),
+            rec_hi.unsqueeze(0) * rec_hi.unsqueeze(1),
+        ],
+        dim=0,
+    )
 
     rec_filters = rec_filters[:, None].repeat(out_size, 1, 1, 1)
 
@@ -48,8 +59,8 @@ def inverse_wavelet_transform(x, filters):
 
 
 class WTConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=5, stride=1, bias=True, wt_levels=1, wt_type='db1'):
-        super(WTConv2d, self).__init__()
+    def __init__(self, in_channels, out_channels, kernel_size=5, stride=1, bias=True, wt_levels=1, wt_type="db1"):
+        super().__init__()
 
         assert in_channels == out_channels
 
@@ -65,13 +76,25 @@ class WTConv2d(nn.Module):
         self.wt_function = partial(wavelet_transform, filters=self.wt_filter)
         self.iwt_function = partial(inverse_wavelet_transform, filters=self.iwt_filter)
 
-        self.base_conv = nn.Conv2d(in_channels, in_channels, kernel_size, padding='same', stride=1, dilation=1,
-                                   groups=in_channels, bias=bias)
+        self.base_conv = nn.Conv2d(
+            in_channels, in_channels, kernel_size, padding="same", stride=1, dilation=1, groups=in_channels, bias=bias
+        )
         self.base_scale = _ScaleModule([1, in_channels, 1, 1])
 
         self.wavelet_convs = nn.ModuleList(
-            [nn.Conv2d(in_channels * 4, in_channels * 4, kernel_size, padding='same', stride=1, dilation=1,
-                       groups=in_channels * 4, bias=False) for _ in range(self.wt_levels)]
+            [
+                nn.Conv2d(
+                    in_channels * 4,
+                    in_channels * 4,
+                    kernel_size,
+                    padding="same",
+                    stride=1,
+                    dilation=1,
+                    groups=in_channels * 4,
+                    bias=False,
+                )
+                for _ in range(self.wt_levels)
+            ]
         )
         self.wavelet_scale = nn.ModuleList(
             [_ScaleModule([1, in_channels * 4, 1, 1], init_scale=0.1) for _ in range(self.wt_levels)]
@@ -79,8 +102,9 @@ class WTConv2d(nn.Module):
 
         if self.stride > 1:
             self.stride_filter = nn.Parameter(torch.ones(in_channels, 1, 1, 1), requires_grad=False)
-            self.do_stride = lambda x_in: F.conv2d(x_in, self.stride_filter, bias=None, stride=self.stride,
-                                                   groups=in_channels)
+            self.do_stride = lambda x_in: F.conv2d(
+                x_in, self.stride_filter, bias=None, stride=self.stride, groups=in_channels
+            )
         else:
             self.do_stride = None
 
@@ -122,7 +146,7 @@ class WTConv2d(nn.Module):
             curr_x = torch.cat([curr_x_ll.unsqueeze(2), curr_x_h], dim=2)
             next_x_ll = self.iwt_function(curr_x)
 
-            next_x_ll = next_x_ll[:, :, :curr_shape[2], :curr_shape[3]]
+            next_x_ll = next_x_ll[:, :, : curr_shape[2], : curr_shape[3]]
 
         x_tag = next_x_ll
         assert len(x_ll_in_levels) == 0
@@ -138,7 +162,7 @@ class WTConv2d(nn.Module):
 
 class _ScaleModule(nn.Module):
     def __init__(self, dims, init_scale=1.0, init_bias=0):
-        super(_ScaleModule, self).__init__()
+        super().__init__()
         self.dims = dims
         self.weight = nn.Parameter(torch.ones(*dims) * init_scale)
         self.bias = None
@@ -174,6 +198,7 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
 
 class Conv(nn.Module):
     """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+
     default_act = nn.SiLU()  # default activation
 
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
@@ -272,8 +297,8 @@ class C3k2_WTConv(C2f):
         """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
         super().__init__(c1, c2, n, shortcut, g, e)
         self.m = nn.ModuleList(
-            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck_WTConv(self.c, self.c, shortcut, g) for _ in
-            range(n)
+            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck_WTConv(self.c, self.c, shortcut, g)
+            for _ in range(n)
         )
 
 

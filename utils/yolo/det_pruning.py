@@ -1,14 +1,13 @@
-from ultralytics import YOLO
 import torch
-from ultralytics.nn.modules import Bottleneck, Conv, C2f, SPPF, Detect, C3k2
 from torch.nn.modules.container import Sequential
-import os
 
+from ultralytics import YOLO
+from ultralytics.nn.modules import SPPF, Bottleneck, C3k2, Conv, Detect
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
-class PRUNE():
+class PRUNE:
     def __init__(self) -> None:
         self.threshold = None
 
@@ -59,7 +58,8 @@ class PRUNE():
         if not isinstance(conv2, list):
             conv2 = [conv2]
         for item in conv2:
-            if item is None: continue
+            if item is None:
+                continue
             if isinstance(item, Conv):
                 conv = item.conv
             else:
@@ -129,9 +129,8 @@ def do_pruning(modelpath, savepath, pruning_rate=0.8):
     for name, p in yolo.model.named_parameters():
         p.requires_grad = True
 
-    yolo.val(data='CityPersons.yaml', batch=4, workers=4)
+    yolo.val(data="CityPersons.yaml", batch=4, workers=4)
     torch.save(yolo.ckpt, savepath)
-
 
 
 if __name__ == "__main__":
