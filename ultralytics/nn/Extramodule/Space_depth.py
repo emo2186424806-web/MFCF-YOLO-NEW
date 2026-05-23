@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class space_to_depth(nn.Module):
     def __init__(self, dimension=2):
         super().__init__()
