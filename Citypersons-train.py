@@ -5,7 +5,7 @@ if __name__ == "__main__":
 
     model.train(
         data=r"CityPersons.yaml",
-        epochs=300,                                 #100轮
+        epochs=300,  # 100轮
         batch=8,
         imgsz=640,
         workers=4,
