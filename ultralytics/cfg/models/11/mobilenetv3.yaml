@@ -11,25 +11,24 @@ scales:
 backbone:
   # [from, repeats, module, args]
 
-  - [-1, 1, conv_bn_hswish, [16, 2]]                  # 0  Stem, output stride=2
-  - [-1, 1, MobileNetV3, [16, 16, 3, 2, 1, 0]]       # 1  P2/4 candidate, 160x160
-  - [-1, 1, MobileNetV3, [24, 72, 3, 2, 0, 0]]       # 2  P3/8 candidate, 80x80
-  - [-1, 1, MobileNetV3, [24, 88, 3, 1, 0, 0]]       # 3  P3/8 feature used by neck, 80x80
+  - [-1, 1, conv_bn_hswish, [16, 2]] # 0  Stem, output stride=2
+  - [-1, 1, MobileNetV3, [16, 16, 3, 2, 1, 0]] # 1  P2/4 candidate, 160x160
+  - [-1, 1, MobileNetV3, [24, 72, 3, 2, 0, 0]] # 2  P3/8 candidate, 80x80
+  - [-1, 1, MobileNetV3, [24, 88, 3, 1, 0, 0]] # 3  P3/8 feature used by neck, 80x80
 
-  - [-1, 1, MobileNetV3, [40, 96, 5, 2, 1, 1]]       # 4  P4/16 candidate, 40x40
-  - [-1, 1, MobileNetV3, [40, 240, 5, 1, 1, 1]]      # 5  P4/16 intermediate, 40x40
-  - [-1, 1, MobileNetV3, [40, 240, 5, 1, 1, 1]]      # 6  P4/16 feature currently used by neck, 40x40
-  - [-1, 1, MobileNetV3, [48, 120, 5, 1, 1, 1]]      # 7  P4/16 deeper feature, 40x40
-  - [-1, 1, MobileNetV3, [48, 144, 5, 1, 1, 1]]      # 8  P4/16 deeper feature, recommended alternative to layer 6
+  - [-1, 1, MobileNetV3, [40, 96, 5, 2, 1, 1]] # 4  P4/16 candidate, 40x40
+  - [-1, 1, MobileNetV3, [40, 240, 5, 1, 1, 1]] # 5  P4/16 intermediate, 40x40
+  - [-1, 1, MobileNetV3, [40, 240, 5, 1, 1, 1]] # 6  P4/16 feature currently used by neck, 40x40
+  - [-1, 1, MobileNetV3, [48, 120, 5, 1, 1, 1]] # 7  P4/16 deeper feature, 40x40
+  - [-1, 1, MobileNetV3, [48, 144, 5, 1, 1, 1]] # 8  P4/16 deeper feature, recommended alternative to layer 6
 
-  - [-1, 1, MobileNetV3, [96, 288, 5, 2, 1, 1]]      # 9  P5/32 candidate, 20x20
-  - [-1, 1, MobileNetV3, [96, 576, 5, 1, 1, 1]]      # 10 P5/32 intermediate, 20x20
-  - [-1, 1, MobileNetV3, [96, 576, 5, 1, 1, 1]]      # 11 P5/32 backbone output before neck enhancement, 20x20
+  - [-1, 1, MobileNetV3, [96, 288, 5, 2, 1, 1]] # 9  P5/32 candidate, 20x20
+  - [-1, 1, MobileNetV3, [96, 576, 5, 1, 1, 1]] # 10 P5/32 intermediate, 20x20
+  - [-1, 1, MobileNetV3, [96, 576, 5, 1, 1, 1]] # 11 P5/32 backbone output before neck enhancement, 20x20
 
-  - [-1, 1, Conv, [512, 1, 1]]                       # 12 Channel alignment for high-level feature
-  - [-1, 1, SPPF, [512, 5]]                          # 13 Enhanced P5/32 feature
-  - [-1, 2, C2PSA, [512]]                            # 14 Final P5/32 feature used by neck, 20x20
-
+  - [-1, 1, Conv, [512, 1, 1]] # 12 Channel alignment for high-level feature
+  - [-1, 1, SPPF, [512, 5]] # 13 Enhanced P5/32 feature
+  - [-1, 2, C2PSA, [512]] # 14 Final P5/32 feature used by neck, 20x20
 
   # Detect heads
-  - [[20, 23, 26], 1, Detect, [nc]]                  # Detect(P3, P4, P5)
+  - [[20, 23, 26], 1, Detect, [nc]] # Detect(P3, P4, P5)
