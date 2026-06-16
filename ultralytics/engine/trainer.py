@@ -6,6 +6,8 @@ Usage:
     $ yolo mode=train model=yolo11n.pt data=coco8.yaml imgsz=640 epochs=100 batch=16
 """
 
+from __future__ import annotations
+
 import gc
 import math
 import os
@@ -32,15 +34,13 @@ from ultralytics.utils import (
     RANK,
     TQDM,
     YAML,
+    IterableSimpleNamespace,
     callbacks,
     clean_url,
     colorstr,
     emojis,
 )
-
-from ultralytics.utils import IterableSimpleNamespace
-from ultralytics.utils.AddLoss import get_fpn_features, Distill_LogitLoss, de_parallel, get_channels, FeatureLoss
-
+from ultralytics.utils.AddLoss import Distill_LogitLoss, FeatureLoss, de_parallel, get_channels, get_fpn_features
 from ultralytics.utils.autobatch import check_train_batch_size
 from ultralytics.utils.checks import check_amp, check_file, check_imgsz, check_model_file_from_stem, print_args
 from ultralytics.utils.dist import ddp_cleanup, generate_ddp_command
@@ -61,8 +61,7 @@ from ultralytics.utils.torch_utils import (
 
 
 class BaseTrainer:
-    """
-    A base class for creating trainers.
+    """A base class for creating trainers.
 
     This class provides the foundation for training YOLO models, handling the training loop, validation, checkpointing,
     and various training utilities. It supports both single-GPU and multi-GPU distributed training.
@@ -112,8 +111,7 @@ class BaseTrainer:
     """
 
     def __init__(self, cfg=DEFAULT_CFG, overrides=None, _callbacks=None):
-        """
-        Initialize the BaseTrainer class.
+        """Initialize the BaseTrainer class.
 
         Args:
             cfg (str, optional): Path to a configuration file.
@@ -174,7 +172,6 @@ class BaseTrainer:
         # HUB
         self.hub_session = None
 
-
         # ------------------------------Add-Param-Start---------------
         self.featureloss = 0
         self.logitloss = 0
@@ -193,7 +190,6 @@ class BaseTrainer:
         else:
             self.distill_layers = [int(x.strip()) for x in str(layers).split(",") if x.strip()]
         # ------------------------------Add-Param-End-----------------
-
 
         # Callbacks
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
@@ -361,16 +357,17 @@ class BaseTrainer:
         weight_decay = self.args.weight_decay * self.batch_size * self.accumulate / self.args.nbs  # scale weight_decay
         iterations = math.ceil(len(self.train_loader.dataset) / max(self.batch_size, self.args.nbs)) * self.epochs
 
-        self.optimizer = self.build_optimizer(model=self.model,
-                                              model_t=self.model_t,
-                                              distillloss=self.distillloss,
-                                              distillonline=self.distillonline,
-                                              name=self.args.optimizer,
-                                              lr=self.args.lr0,
-                                              momentum=self.args.momentum,
-                                              decay=weight_decay,
-                                              iterations=iterations)
-
+        self.optimizer = self.build_optimizer(
+            model=self.model,
+            model_t=self.model_t,
+            distillloss=self.distillloss,
+            distillonline=self.distillonline,
+            name=self.args.optimizer,
+            lr=self.args.lr0,
+            momentum=self.args.momentum,
+            decay=weight_decay,
+            iterations=iterations,
+        )
 
         # Scheduler
         self._setup_scheduler()
@@ -381,13 +378,14 @@ class BaseTrainer:
 
     def _do_train(self, world_size=1):
         """Train the model with the specified world size."""
-
         self.model = de_parallel(self.model)
         if self.model_t is not None:
             self.model_t = de_parallel(self.model_t)
-            self.channels_s = get_channels(self.model,self.distill_layers)
-            self.channels_t = get_channels(self.model_t,self.distill_layers)
-            self.distillloss = FeatureLoss(channels_s=self.channels_s, channels_t=self.channels_t, distiller= self.distill_feat_type)
+            self.channels_s = get_channels(self.model, self.distill_layers)
+            self.channels_t = get_channels(self.model_t, self.distill_layers)
+            self.distillloss = FeatureLoss(
+                channels_s=self.channels_s, channels_t=self.channels_t, distiller=self.distill_feat_type
+            )
 
         if world_size > 1:
             self._setup_ddp(world_size)
@@ -455,8 +453,8 @@ class BaseTrainer:
                     loss, self.loss_items = self.model(batch)
                     self.loss = loss.sum()
 
-                    pred_s= self.model(batch['img'])
-                    stu_features = get_fpn_features(batch['img'], self.model,fpn_layers=self.distill_layers)
+                    pred_s = self.model(batch["img"])
+                    stu_features = get_fpn_features(batch["img"], self.model, fpn_layers=self.distill_layers)
 
                     if RANK != -1:
                         self.loss *= world_size
@@ -467,15 +465,16 @@ class BaseTrainer:
                     if self.model_t is not None:
                         distill_weight = ((1 - math.cos(i * math.pi / len(self.train_loader))) / 2) * (0.1 - 1) + 1
                         with torch.no_grad():
-                            pred_t_offline = self.model_t(batch['img'])
-                            tea_features = get_fpn_features(batch['img'], self.model_t,
-                                                            fpn_layers=self.distill_layers)  # forward
+                            pred_t_offline = self.model_t(batch["img"])
+                            tea_features = get_fpn_features(
+                                batch["img"], self.model_t, fpn_layers=self.distill_layers
+                            )  # forward
                             self.featureloss = self.distillloss(stu_features, tea_features) * distill_weight
                             self.loss += self.featureloss
 
                         if self.distillonline:
                             self.model_t.train()
-                            pred_t_online = self.model_t(batch['img'])
+                            pred_t_online = self.model_t(batch["img"])
                             for p in pred_t_online:
                                 p = p.detach()
                             if i == 0 and epoch == 0:
@@ -500,15 +499,12 @@ class BaseTrainer:
                 # Backward
                 self.scaler.scale(self.loss).backward()
 
-
-                #pruning
-                #l1_lambda = 1e-2 * (1 - 0.9 * epoch / self.epochs)
-                #for k, m in self.model.named_modules():
+                # pruning
+                # l1_lambda = 1e-2 * (1 - 0.9 * epoch / self.epochs)
+                # for k, m in self.model.named_modules():
                 #    if isinstance(m, nn.BatchNorm2d):
                 #        m.weight.grad.data.add_(l1_lambda * torch.sign(m.weight.data))
                 #        m.bias.grad.data.add_(1e-2 * torch.sign(m.bias.data))
-
-
 
                 # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
                 if ni - last_opt_step >= self.accumulate:
@@ -526,14 +522,24 @@ class BaseTrainer:
                             break
 
                 # Log
-                mem = f"{torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0:.3g}G"  # (GB)
+                mem = f"{torch.cuda.memory_reserved() / 1e9 if torch.cuda.is_available() else 0:.3g}G"  # (GB)
                 loss_len = self.tloss.shape[0] if len(self.tloss.shape) else 1
                 losses = self.tloss if loss_len > 1 else torch.unsqueeze(self.tloss, 0)
                 if RANK in {-1, 0}:
                     loss_length = self.tloss.shape[0] if len(self.tloss.shape) else 1
                     pbar.set_description(
-                        ('%12s' * 2 + '%12.4g' * (5 + loss_length)) %
-                        (f'{epoch + 1}/{self.epochs}', mem, * losses, self.featureloss, self.teacherloss, self.logitloss, batch['cls'].shape[0], batch['img'].shape[-1]))
+                        ("%12s" * 2 + "%12.4g" * (5 + loss_length))
+                        % (
+                            f"{epoch + 1}/{self.epochs}",
+                            mem,
+                            *losses,
+                            self.featureloss,
+                            self.teacherloss,
+                            self.logitloss,
+                            batch["cls"].shape[0],
+                            batch["img"].shape[-1],
+                        )
+                    )
                     self.run_callbacks("on_batch_end")
                     if self.args.plots and ni in self.plot_idx:
                         self.plot_training_samples(batch, ni)
@@ -617,7 +623,7 @@ class BaseTrainer:
                 total = torch.cuda.get_device_properties(self.device).total_memory
         return ((memory / total) if total > 0 else 0) if fraction else (memory / 2**30)
 
-    def _clear_memory(self, threshold: float = None):
+    def _clear_memory(self, threshold: float | None = None):
         """Clear accelerator memory by calling garbage collector and emptying cache."""
         if threshold:
             assert 0 <= threshold <= 1, "Threshold must be between 0 and 1."
@@ -681,8 +687,7 @@ class BaseTrainer:
         #    (self.wdir / "last_mosaic.pt").write_bytes(serialized_ckpt)  # save mosaic checkpoint
 
     def get_dataset(self):
-        """
-        Get train and validation datasets from data dictionary.
+        """Get train and validation datasets from data dictionary.
 
         Returns:
             (dict): A dictionary containing the training/validation/test dataset and category names.
@@ -708,8 +713,7 @@ class BaseTrainer:
         return data
 
     def setup_model(self):
-        """
-        Load, create, or download model for any task.
+        """Load, create, or download model for any task.
 
         Returns:
             (dict): Optional checkpoint to resume training from.
@@ -726,7 +730,7 @@ class BaseTrainer:
             weights, _ = attempt_load_one_weight(self.args.pretrained)
         self.model = self.get_model(cfg=cfg, weights=weights, verbose=RANK == -1)  # calls Model(cfg, weights)
 
-        #pruning
+        # pruning
         self.model = weights
         return ckpt
 
@@ -745,8 +749,7 @@ class BaseTrainer:
         return batch
 
     def validate(self):
-        """
-        Run validation on test set using self.validator.
+        """Run validation on test set using self.validator.
 
         Returns:
             metrics (dict): Dictionary of validation metrics.
@@ -775,10 +778,9 @@ class BaseTrainer:
         raise NotImplementedError("build_dataset function not implemented in trainer")
 
     def label_loss_items(self, loss_items=None, prefix="train"):
-        """
-        Return a loss dict with labelled training loss items tensor.
+        """Return a loss dict with labeled training loss items tensor.
 
-        Note:
+        Notes:
             This is not needed for classification but necessary for segmentation & detection
         """
         return {"loss": loss_items} if loss_items is not None else ["loss"]
@@ -808,10 +810,10 @@ class BaseTrainer:
         """Save training metrics to a CSV file."""
         keys, vals = list(metrics.keys()), list(metrics.values())
         n = len(metrics) + 2  # number of cols
-        s = "" if self.csv.exists() else (("%s," * n % tuple(["epoch", "time"] + keys)).rstrip(",") + "\n")  # header
+        s = "" if self.csv.exists() else (("%s," * n % tuple(["epoch", "time", *keys])).rstrip(",") + "\n")  # header
         t = time.time() - self.train_time_start
         with open(self.csv, "a", encoding="utf-8") as f:
-            f.write(s + ("%.6g," * n % tuple([self.epoch + 1, t] + vals)).rstrip(",") + "\n")
+            f.write(s + ("%.6g," * n % tuple([self.epoch + 1, t, *vals])).rstrip(",") + "\n")
 
     def plot_metrics(self):
         """Plot and display metrics visually."""
@@ -905,19 +907,28 @@ class BaseTrainer:
             LOGGER.info("Closing dataloader mosaic")
             self.train_loader.dataset.close_mosaic(hyp=copy(self.args))
 
-    def build_optimizer(self, model, model_t, distillloss, distillonline=False, name="auto", lr=0.001, momentum=0.9, decay=1e-5, iterations=1e5):
-        """
-        Construct an optimizer for the given model.
+    def build_optimizer(
+        self,
+        model,
+        model_t,
+        distillloss,
+        distillonline=False,
+        name="auto",
+        lr=0.001,
+        momentum=0.9,
+        decay=1e-5,
+        iterations=1e5,
+    ):
+        """Construct an optimizer for the given model.
 
         Args:
             model (torch.nn.Module): The model for which to build an optimizer.
-            name (str, optional): The name of the optimizer to use. If 'auto', the optimizer is selected
-                based on the number of iterations.
+            name (str, optional): The name of the optimizer to use. If 'auto', the optimizer is selected based on the
+                number of iterations.
             lr (float, optional): The learning rate for the optimizer.
             momentum (float, optional): The momentum factor for the optimizer.
             decay (float, optional): The weight decay for the optimizer.
-            iterations (float, optional): The number of iterations, which determines the optimizer if
-                name is 'auto'.
+            iterations (float, optional): The number of iterations, which determines the optimizer if name is 'auto'.
 
         Returns:
             (torch.optim.Optimizer): The constructed optimizer.
@@ -949,23 +960,22 @@ class BaseTrainer:
         if model_t is not None and distillonline:
             for v in model_t.modules():
                 # print(v)
-                if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):  # bias (no decay)
+                if hasattr(v, "bias") and isinstance(v.bias, nn.Parameter):  # bias (no decay)
                     g[2].append(v.bias)
                 if isinstance(v, bn):  # weight (no decay)
                     g[1].append(v.weight)
-                elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):  # weight (with decay)
+                elif hasattr(v, "weight") and isinstance(v.weight, nn.Parameter):  # weight (with decay)
                     g[0].append(v.weight)
 
         if model_t is not None and distillloss is not None:
             for k, v in distillloss.named_modules():
                 # print(v)
-                if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):  # bias (no decay)
+                if hasattr(v, "bias") and isinstance(v.bias, nn.Parameter):  # bias (no decay)
                     g[2].append(v.bias)
-                if isinstance(v, bn) or 'bn' in k:  # weight (no decay)
+                if isinstance(v, bn) or "bn" in k:  # weight (no decay)
                     g[1].append(v.weight)
-                elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):  # weight (with decay)
+                elif hasattr(v, "weight") and isinstance(v.weight, nn.Parameter):  # weight (with decay)
                     g[0].append(v.weight)
-
 
         optimizers = {"Adam", "Adamax", "AdamW", "NAdam", "RAdam", "RMSProp", "SGD", "auto"}
         name = {x.lower(): x for x in optimizers}.get(name.lower())

@@ -1,5 +1,6 @@
-from ultralytics import YOLO
 import os
+
+from ultralytics import YOLO
 from utils.yolo.attention import add_attention
 
 root = os.getcwd()
@@ -8,9 +9,7 @@ root = os.getcwd()
 yaml_path = os.path.join(r"WiderPerson.yaml")
 
 # ---------------- Step1: 改进模型正常训练得到 teacher-ready 权重 ----------------
-pretrained_model_path = os.path.join(
-    r"runs/detect/widerperson+adown+wtconv+ccfm/weights/best.pt"
-)
+pretrained_model_path = os.path.join(r"runs/detect/widerperson+adown+wtconv+ccfm/weights/best.pt")
 
 # ---------------- Step2: 稀疏训练 ----------------
 step1_train_model_path = os.path.join(r"runs/new-pruning/widerperson+step1/weights/best.pt")
@@ -27,14 +26,10 @@ step4_finetune_name = "widerperson+step4"
 
 # ---------------- Step5: 蒸馏 ----------------
 # teacher: 未剪枝改进模型
-step5_teacher_model_path = os.path.join(
-    r"runs/detect/widerperson+adown+wtconv+ccfm/weights/best.pt"
-)
+step5_teacher_model_path = os.path.join(r"runs/detect/widerperson+adown+wtconv+ccfm/weights/best.pt")
 
 # student: 剪枝微调后的改进模型
-step5_student_model_path = os.path.join(
-    rf"{step4_finetune_project}\{step4_finetune_name}\weights\best.pt"
-)
+step5_student_model_path = os.path.join(rf"{step4_finetune_project}\{step4_finetune_name}\weights\best.pt")
 
 step5_output_project = os.path.join(r"runs/new-pruning/widerperson+step5")
 step5_output_name = "student"
@@ -72,6 +67,7 @@ def step2_constraint_train():
 
 def step3_pruning():
     from utils.yolo.det_pruning_adown_wtconv_ccfm import do_pruning
+
     do_pruning(
         modelpath=step3_prune_before_model_path,
         savepath=step3_prune_after_model_path,
@@ -124,4 +120,4 @@ if __name__ == "__main__":
     #  step2_constraint_train()
     # step3_pruning()
     # step4_finetune()
-     step5_distillation()
+    step5_distillation()

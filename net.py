@@ -1,9 +1,10 @@
 import torch
+
 from ultralytics import YOLO
 
 
 def shape_to_str(x):
-    """把张量 / 列表 / 元组的 shape 转成可读字符串"""
+    """把张量 / 列表 / 元组的 shape 转成可读字符串."""
     if isinstance(x, torch.Tensor):
         return str(tuple(x.shape))
     elif isinstance(x, (list, tuple)):
@@ -19,7 +20,7 @@ def shape_to_str(x):
 
 
 def get_chw(x):
-    """提取输出中的 C, H, W"""
+    """提取输出中的 C, H, W."""
     if isinstance(x, torch.Tensor):
         if x.ndim == 4:
             _, c, h, w = x.shape
@@ -58,14 +59,17 @@ def inspect_model_shapes(model_path, imgsz=640, device="cpu"):
             from_idx = getattr(module, "f", "-")
             module_name = type(module).__name__
 
-            records.append({
-                "idx": idx,
-                "from": from_idx,
-                "module": module_name,
-                "input_shape": in_shape,
-                "output_shape": out_shape,
-                "chw": chw_info
-            })
+            records.append(
+                {
+                    "idx": idx,
+                    "from": from_idx,
+                    "module": module_name,
+                    "input_shape": in_shape,
+                    "output_shape": out_shape,
+                    "chw": chw_info,
+                }
+            )
+
         return hook
 
     for i, m in enumerate(layers):
@@ -83,10 +87,12 @@ def inspect_model_shapes(model_path, imgsz=640, device="cpu"):
     print(f"{'Idx':<5} {'From':<10} {'Module':<25} {'Input Shape':<25} {'Output Shape':<35} {'C,H,W'}")
     print("=" * 130)
     for r in records:
-        print(f"{r['idx']:<5} {str(r['from']):<10} {r['module']:<25} {r['input_shape']:<25} {r['output_shape']:<35} {r['chw']}")
+        print(
+            f"{r['idx']:<5} {r['from']!s:<10} {r['module']:<25} {r['input_shape']:<25} {r['output_shape']:<35} {r['chw']}"
+        )
     print("=" * 130)
 
 
 if __name__ == "__main__":
-    model_path = r"ultralytics/cfg/models/11/ccfm.yaml"   # 改成你的模型路径，比如 best.pt / prune.pt / yaml
+    model_path = r"ultralytics/cfg/models/11/ccfm.yaml"  # 改成你的模型路径，比如 best.pt / prune.pt / yaml
     inspect_model_shapes(model_path, imgsz=640, device="cuda:0")

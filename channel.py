@@ -1,15 +1,17 @@
 import os
-import torch
-import pandas as pd
+
 import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
 from ultralytics import YOLO
 
-plt.rcParams["font.sans-serif"] = ["SimHei"]   # 中文
+plt.rcParams["font.sans-serif"] = ["SimHei"]  # 中文
 plt.rcParams["axes.unicode_minus"] = False
 
 
 def extract_tensor_chw(x):
-    """从输出中提取第一个4维特征图的 C,H,W"""
+    """从输出中提取第一个4维特征图的 C,H,W."""
     if isinstance(x, torch.Tensor):
         if x.ndim == 4:
             _, c, h, w = x.shape
@@ -25,7 +27,7 @@ def extract_tensor_chw(x):
 
 
 def get_model_structure(model_path, imgsz=640, device="cpu"):
-    """提取每层输出结构信息"""
+    """提取每层输出结构信息."""
     yolo = YOLO(model_path)
     model = yolo.model.to(device)
     model.eval()
@@ -42,14 +44,10 @@ def get_model_structure(model_path, imgsz=640, device="cpu"):
             else:
                 c, h, w = chw
 
-            records.append({
-                "idx": idx,
-                "from": getattr(module, "f", "-"),
-                "module": type(module).__name__,
-                "C": c,
-                "H": h,
-                "W": w
-            })
+            records.append(
+                {"idx": idx, "from": getattr(module, "f", "-"), "module": type(module).__name__, "C": c, "H": h, "W": w}
+            )
+
         return hook
 
     for i, m in enumerate(layers):
@@ -67,13 +65,8 @@ def get_model_structure(model_path, imgsz=640, device="cpu"):
 
 
 def build_compare_df(before_df, after_df):
-    """按层号对齐剪枝前后结构"""
-    df = before_df.merge(
-        after_df,
-        on="idx",
-        how="outer",
-        suffixes=("_before", "_after")
-    )
+    """按层号对齐剪枝前后结构."""
+    df = before_df.merge(after_df, on="idx", how="outer", suffixes=("_before", "_after"))
 
     # 模块名优先取 before
     df["module"] = df["module_before"].fillna(df["module_after"])
@@ -82,16 +75,25 @@ def build_compare_df(before_df, after_df):
     df["C_change"] = df["C_after"] - df["C_before"]
     df["C_prune_ratio"] = 1 - (df["C_after"] / df["C_before"])
 
-    return df[[
-        "idx", "from", "module",
-        "C_before", "H_before", "W_before",
-        "C_after", "H_after", "W_after",
-        "C_change", "C_prune_ratio"
-    ]]
+    return df[
+        [
+            "idx",
+            "from",
+            "module",
+            "C_before",
+            "H_before",
+            "W_before",
+            "C_after",
+            "H_after",
+            "W_after",
+            "C_change",
+            "C_prune_ratio",
+        ]
+    ]
 
 
 def plot_channel_compare(compare_df, save_path):
-    """绘制剪枝前后各层通道数对比图"""
+    """绘制剪枝前后各层通道数对比图."""
     plot_df = compare_df.dropna(subset=["C_before", "C_after"]).copy()
 
     x = plot_df["idx"].tolist()
@@ -116,7 +118,7 @@ def plot_channel_compare(compare_df, save_path):
 
 
 def plot_prune_ratio(compare_df, save_path):
-    """绘制各层通道剪枝比例柱状图"""
+    """绘制各层通道剪枝比例柱状图."""
     plot_df = compare_df.dropna(subset=["C_before", "C_after"]).copy()
     plot_df = plot_df[plot_df["C_before"] > 0]
 
@@ -138,7 +140,7 @@ def plot_prune_ratio(compare_df, save_path):
 
 
 if __name__ == "__main__":
-    before_model = r"runs/new-pruning/citypersons+step1/weights/best.pt"       # 剪枝前模型
+    before_model = r"runs/new-pruning/citypersons+step1/weights/best.pt"  # 剪枝前模型
     after_model = r"runs/new-pruning/widerperson+step5/student/weights/best.pt"  # 剪枝后模型
 
     save_dir = r"structure_compare1"
@@ -155,15 +157,9 @@ if __name__ == "__main__":
     csv_path = os.path.join(save_dir, "network_structure_compare.csv")
     compare_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
-    plot_channel_compare(
-        compare_df,
-        os.path.join(save_dir, "channels_before_after.png")
-    )
+    plot_channel_compare(compare_df, os.path.join(save_dir, "channels_before_after.png"))
 
-    plot_prune_ratio(
-        compare_df,
-        os.path.join(save_dir, "channel_prune_ratio.png")
-    )
+    plot_prune_ratio(compare_df, os.path.join(save_dir, "channel_prune_ratio.png"))
 
     print("结构对比表已保存：", csv_path)
     print("通道对比图已保存：", os.path.join(save_dir, "channels_before_after.png"))
