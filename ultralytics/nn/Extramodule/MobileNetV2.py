@@ -1,15 +1,15 @@
-'''
+"""
 Author: dpsfigo
 Date: 2025-09-29 16:08:23
 LastEditors: dpsfigo
 LastEditTime: 2025-09-29 16:08:45
-Description: 请填写简介
-'''
+Description: 请填写简介.
+"""
 
 import torch
 from torch import nn
 
-__all__ = ['MobileNetV2_n', 'MobileNetV2_s', 'MobileNetV2_m']
+__all__ = ["MobileNetV2_m", "MobileNetV2_n", "MobileNetV2_s"]
 
 
 class ConvNormReLUBlock(nn.Module):
@@ -24,7 +24,7 @@ class ConvNormReLUBlock(nn.Module):
         bias: bool = False,
         activation: bool = nn.ReLU6,
     ):
-        """Constructs a block containing a combination of convolution, batchnorm and relu
+        """Constructs a block containing a combination of convolution, batchnorm and relu.
 
         Args:
             in_channels (int): input channels
@@ -32,11 +32,11 @@ class ConvNormReLUBlock(nn.Module):
             kernel_size (list): kernel size parameter for convolution
             stride (int, optional): stride parameter for convolution. Defaults to 1.
             padding (int, optional): padding parameter for convolution. Defaults to 0.
-            groups (int, optional): number of blocked connections from input channel to output channel for convolution. Defaults to 1.
+            groups (int, optional): number of blocked connections from input channel to output channel for convolution.
+                Defaults to 1.
             bias (bool, optional): whether to enable bias in convolution. Defaults to False.
             activation (bool, optional): activation function to use. Defaults to nn.ReLU6.
         """
-
         super().__init__()
 
         self.conv = nn.Conv2d(
@@ -53,7 +53,6 @@ class ConvNormReLUBlock(nn.Module):
 
     def forward(self, x):
         """Perform forward pass."""
-
         x = self.conv(x)
         x = self.bn(x)
         x = self.activation(x)
@@ -69,16 +68,16 @@ class InverseResidualBlock(nn.Module):
         expansion_factor: int = 6,
         stride: int = 1,
     ):
-        """Constructs a inverse residual block with depthwise seperable convolution
+        """Constructs a inverse residual block with depthwise separable convolution.
 
         Args:
             in_channels (int): input channels
             out_channels (int): output channels
-            expansion_factor (int, optional): Calculating the input & output channel for depthwise convolution by multiplying the expansion factor with input channels. Defaults to 6.
-            stride (int, optional): stride paramemeter for depthwise convolution. Defaults to 1.
-            CSDN:Snu77
+            expansion_factor (int, optional): Calculating the input & output channel for depthwise convolution by
+                multiplying the expansion factor with input channels. Defaults to 6.
+            stride (int, optional): stride parameter for depthwise convolution. Defaults to 1.
+            CSDN: Snu77
         """
-
         super().__init__()
 
         hidden_channels = in_channels * expansion_factor
@@ -87,7 +86,7 @@ class InverseResidualBlock(nn.Module):
         self.conv1 = (
             ConvNormReLUBlock(in_channels, hidden_channels, (1, 1))
             if in_channels != hidden_channels
-            else nn.Identity() #  If it's not the first layer, then we need to add a 1x1 convolutional layer to expand the number of channels
+            else nn.Identity()  #  If it's not the first layer, then we need to add a 1x1 convolutional layer to expand the number of channels
         )
         self.depthwise_conv = ConvNormReLUBlock(
             hidden_channels,
@@ -97,13 +96,10 @@ class InverseResidualBlock(nn.Module):
             padding=1,
             groups=hidden_channels,
         )
-        self.conv2 = ConvNormReLUBlock(
-            hidden_channels, out_channels, (1, 1), activation=nn.Identity
-        )
+        self.conv2 = ConvNormReLUBlock(hidden_channels, out_channels, (1, 1), activation=nn.Identity)
 
     def forward(self, x):
         """Perform forward pass."""
-
         identity = x
 
         x = self.conv1(x)
@@ -122,14 +118,13 @@ class MobileNetV2(nn.Module):
         input_channel: int = 3,
         depth_multiplier: float = 1,
     ):
-        """Constructs MobileNetV2 architecture
+        """Constructs MobileNetV2 architecture.
 
         Args:
             n_classes (int, optional): output neuron in last layer. Defaults to 1000.
             input_channel (int, optional): input channels in first conv layer. Defaults to 3.
             dropout (float, optional): dropout in last layer. Defaults to 0.2.
         """
-
         super().__init__()
 
         # The configuration of MobileNetV2
@@ -144,9 +139,7 @@ class MobileNetV2(nn.Module):
             (160, 6, 320, 1, 1),
         )
 
-        layers = [
-            ConvNormReLUBlock(input_channel, int(32 * depth_multiplier), (3, 3), stride=2, padding=1)
-        ]
+        layers = [ConvNormReLUBlock(input_channel, int(32 * depth_multiplier), (3, 3), stride=2, padding=1)]
 
         # 遍历配置并添加 InverseResidualBlock 层
         for in_channels, expansion_factor, out_channels, repeat, stride in config:  # repeat不放缩了已经足够轻量化了
@@ -182,9 +175,11 @@ def MobileNetV2_n(width_mult=0.5):
     model = MobileNetV2(depth_multiplier=0.25)
     return model
 
+
 def MobileNetV2_s(width_mult=1.0):
     model = MobileNetV2(depth_multiplier=0.5)
     return model
+
 
 def MobileNetV2_m(width_mult=1.5):
     model = MobileNetV2(depth_multiplier=1)
@@ -192,7 +187,6 @@ def MobileNetV2_m(width_mult=1.5):
 
 
 if __name__ == "__main__":
-
     # Generating Sample image
     image_size = (1, 3, 224, 224)
     image = torch.rand(*image_size)
